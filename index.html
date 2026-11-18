@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minha Van: Gestão do TAC</title>
+<meta name="theme-color" content="#16324f">
+<meta name="description" content="Controle de viagens, gastos e manutenção para o transportador autônomo.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Minha Van">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f3f4f1; --card:#ffffff; --ink:#15171a; --ink2:#4f545c; --muted:#868b93; --line:#e3e4df;
+  --brand:#16324f; --brand2:#22507d; --accent:#f2a900; --accentInk:#3a2a00;
+  --good:#1a7f37; --goodBg:#e6f4ea; --warn:#a15c00; --warnBg:#fff3d6; --bad:#c62828; --badBg:#fdecec;
+  --s1:#2a78d6; --s2:#eb6834; --seq:#2a78d6;
+  --radius:16px; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#121417; --card:#1c1f24; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8e9199; --line:#2c3037;
+    --brand:#0f2236; --brand2:#2b5f93; --accent:#f2b51d; --accentInk:#2a1e00;
+    --good:#4cc26b; --goodBg:#16301e; --warn:#f0b54a; --warnBg:#33270f; --bad:#ff7a7a; --badBg:#3a1a1a;
+    --s1:#3987e5; --s2:#d95926; --seq:#3987e5;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--brand2)}
+@media (prefers-color-scheme: dark){a{color:#7fb3ec}}
+
+/* Header */
+.top{position:sticky;top:0;z-index:20;background:var(--brand);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;display:flex;align-items:center;gap:12px}
+.top .logo{width:38px;height:38px;border-radius:11px;background:var(--accent);display:grid;place-items:center;flex:none}
+.top h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.01em}
+.top .sub{font-size:12px;opacity:.75}
+.top .grow{flex:1;min-width:0}
+.iconbtn{background:rgba(255,255,255,.12);border:0;color:#fff;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;cursor:pointer}
+.sync{font-size:11px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.14);white-space:nowrap}
+
+main{max-width:980px;margin:0 auto;padding:14px 14px calc(env(safe-area-inset-bottom) + 96px)}
+h2{font-size:20px;margin:6px 2px 12px;font-weight:800;letter-spacing:-.02em}
+h3{font-size:15px;margin:0 0 10px;font-weight:700}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:12px}
+.muted{color:var(--muted)} .ink2{color:var(--ink2)}
+.small{font-size:12.5px}
+.row{display:flex;gap:10px;align-items:center}
+.wrap{flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.grid{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:720px){.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.cols2{grid-template-columns:1fr 1fr}}
+@media(max-width:719px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Chips / segmented */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:600;font-size:13.5px;color:var(--ink2)}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+@media (prefers-color-scheme: dark){.chip.on{background:var(--brand2);border-color:var(--brand2)}}
+.period{display:flex;align-items:center;gap:6px;margin:10px 0 14px}
+.period .lbl{flex:1;text-align:center;font-weight:700}
+.navbtn{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:18px}
+
+/* KPI */
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi .k{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.kpi .v{font-size:21px;font-weight:800;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:12px;color:var(--ink2);margin-top:2px}
+.kpi.hero{grid-column:1/-1;background:var(--brand);color:#fff;border:0}
+.kpi.hero .k{color:rgba(255,255,255,.7)} .kpi.hero .d{color:rgba(255,255,255,.8)}
+.kpi.hero .v{font-size:32px}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.kpi.hero .pos{color:#8ff0a8} .kpi.hero .neg{color:#ffb3b3}
+
+/* Alerts */
+.alert{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;margin-bottom:8px;font-size:14px}
+.alert.bad{background:var(--badBg)} .alert.warn{background:var(--warnBg)} .alert.good{background:var(--goodBg)} .alert.info{background:var(--bg);border:1px solid var(--line)}
+.alert .ic{flex:none;font-size:16px;line-height:1.3}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.good{background:var(--goodBg);color:var(--good)} .pill.warn{background:var(--warnBg);color:var(--warn)} .pill.bad{background:var(--badBg);color:var(--bad)} .pill.neu{background:var(--bg);color:var(--ink2);border:1px solid var(--line)}
+
+/* Lists */
+.item{display:flex;gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:last-child{border-bottom:0}
+.item .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--bg);flex:none;font-size:18px}
+.item .t{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .s{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .amt{font-weight:800;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.empty{text-align:center;padding:26px 10px;color:var(--muted)}
+.empty .big{font-size:34px;margin-bottom:6px}
+
+/* Buttons */
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:700;cursor:pointer;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn.pri{background:var(--accent);color:var(--accentInk);border-color:var(--accent)}
+.btn.dark{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn.danger{background:var(--badBg);color:var(--bad);border-color:transparent}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+
+/* Bottom nav */
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 4px calc(env(safe-area-inset-bottom) + 6px)}
+.bnav button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--muted);padding:6px 0;cursor:pointer}
+.bnav button svg{width:23px;height:23px}
+.bnav button.on{color:var(--brand2)}
+@media (prefers-color-scheme: dark){.bnav button.on{color:#7fb3ec}}
+.fab{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 76px);z-index:31;width:60px;height:60px;border-radius:20px;border:0;background:var(--accent);color:var(--accentInk);font-size:32px;font-weight:500;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;display:grid;place-items:center}
+
+/* Modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:720px){.ov{align-items:center}}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px)}
+@media(min-width:720px){.sheet{border-radius:22px}}
+.sheet h3{font-size:18px;margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.inp{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px;outline:none}
+.inp:focus{border-color:var(--brand2);box-shadow:0 0 0 3px rgba(42,120,214,.18)}
+textarea.inp{min-height:70px;resize:vertical}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;gap:10px;align-items:center;padding:6px 0}
+.check input{width:22px;height:22px}
+.calc{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13.5px;margin-bottom:12px;border:1px dashed var(--line)}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick button{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:16px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700}
+.quick button .e{font-size:28px}
+
+/* Progress */
+.bar{height:8px;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;border-radius:8px}
+
+/* Charts */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);margin:6px 0 4px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--card);font-size:12.5px;padding:7px 10px;border-radius:10px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .12s;z-index:5;line-height:1.45}
+.tip b{font-weight:700}
+.hbar{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:8px;align-items:center;font-size:13.5px;margin-bottom:8px}
+.hbar .track{height:14px;border-radius:4px;background:transparent;position:relative}
+.hbar .track i{position:absolute;left:0;top:0;bottom:0;border-radius:0 4px 4px 0;background:var(--seq)}
+.hbar .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.hbar .vl{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:88px}
+
+table.t{width:100%;border-collapse:collapse;font-size:13.5px}
+table.t th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;padding:6px 6px;border-bottom:1px solid var(--line)}
+table.t td{padding:9px 6px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.t td.r,table.t th.r{text-align:right}
+.tscroll{overflow-x:auto}
+
+/* ANTT */
+.rule{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:12px 0}
+.rule h4{margin:0 0 4px;font-size:15px}
+.rule p{margin:4px 0;color:var(--ink2);font-size:14px}
+.rule ul{margin:4px 0;padding-left:18px;color:var(--ink2);font-size:14px}
+.src{font-size:12px;color:var(--muted)}
+details.card summary{cursor:pointer;font-weight:700;list-style:none}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary:after{content:"＋";float:right;color:var(--muted)}
+details.card[open] summary:after{content:"－"}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 150px);transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 16px;border-radius:12px;z-index:80;font-weight:600;font-size:14px;max-width:90vw;text-align:center}
+.banner{background:var(--warnBg);border-radius:12px;padding:12px;margin-bottom:12px;font-size:14px}
+.sep{height:1px;background:var(--line);margin:12px 0}
+.tabs2{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+.tabs2 button{flex:1;border:0;background:none;padding:9px 6px;border-radius:10px;font-weight:700;color:var(--muted);cursor:pointer;font-size:13.5px}
+.tabs2 button.on{background:var(--bg);color:var(--ink);box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo" aria-hidden="true">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3a2a00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16V8a2 2 0 0 1 2-2h10l5 5h1a2 2 0 0 1 2 2v3h-2"/><path d="M5 16H2"/><path d="M15 16H9"/><path d="M14 6v5h5"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+  </div>
+  <div class="grow">
+    <h1 id="hdrTitle">Minha Van</h1>
+    <div class="sub" id="hdrSub">Gestão do transportador autônomo</div>
+  </div>
+  <span class="sync" id="syncChip">📱 salvo no celular</span>
+  <button class="iconbtn" id="btnCfg" aria-label="Ajustes">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main id="app"></main>
+
+<button class="fab" id="fab" aria-label="Novo lançamento">+</button>
+
+<nav class="bnav" id="bnav">
+  <button data-v="painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Painel</button>
+  <button data-v="viagens"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/></svg>Viagens</button>
+  <button data-v="gastos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>Gastos</button>
+  <button data-v="manutencao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>Manutenção</button>
+  <button data-v="antt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>Regras</button>
+</nav>
+
+<div class="tip" id="tip"></div>
+
+<script>
+/* ===================== Utilidades ===================== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { if (v === '' || v == null) return 0; const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
+const R$ = v => (v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const R$c = v => { const a = Math.abs(v||0); if (a >= 1e6) return 'R$ ' + (v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1}) + ' mi'; if (a >= 1e4) return 'R$ ' + (v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1}) + ' mil'; return R$(v); };
+const N = (v, d = 0) => (v || 0).toLocaleString('pt-BR', {minimumFractionDigits:d, maximumFractionDigits:d});
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+const today = () => iso(new Date());
+const parseD = s => { if (!s) return null; const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const fmtD = s => { const d = parseD(s); return d ? pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() : '—'; };
+const fmtDs = s => { const d = parseD(s); return d ? pad(d.getDate()) + '/' + pad(d.getMonth()+1) : '—'; };
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const DIAS3 = ['dom','seg','ter','qua','qui','sex','sáb'];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const daysBetween = (a, b) => Math.round((parseD(b) - parseD(a)) / 864e5);
+const addBusinessDays = (s, n) => { const d = parseD(s); let c = 0; while (c < n) { d.setDate(d.getDate()+1); const w = d.getDay(); if (w !== 0 && w !== 6) c++; } return iso(d); };
+const norm = s => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const title = s => String(s || '').trim().replace(/\s+/g, ' ');
+
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+
+/* ===================== Categorias ===================== */
+const CAT_GASTO = ['Pedágio','Arla 32','Alimentação','Pernoite / Hospedagem','Manutenção','Pneus','Peças','Lavagem','Chapa / Descarga','Prestação da van','Seguro','Rastreador','INSS / Impostos','IPVA / Licenciamento','Documentos / RNTRC','Multas','Telefone / Internet','Outros'];
+const CAT_ICO = {'Combustível':'⛽','Pedágio':'🛣️','Arla 32':'💧','Alimentação':'🍽️','Pernoite / Hospedagem':'🛏️','Manutenção':'🔧','Pneus':'🛞','Peças':'⚙️','Lavagem':'🧽','Chapa / Descarga':'📦','Prestação da van':'🏦','Seguro':'🛡️','Rastreador':'📡','INSS / Impostos':'🧾','IPVA / Licenciamento':'📄','Documentos / RNTRC':'🪪','Multas':'🚨','Telefone / Internet':'📱','Outros':'📌'};
+const CAT_CONTA = ['Prestação da van','Seguro','Rastreador','INSS / Impostos','IPVA / Licenciamento','Telefone / Internet','Outros'];
+const DOCS_SUG = ['RNTRC (ANTT)','CNH','Exame toxicológico','CRLV / Licenciamento','Seguro da van','Seguros obrigatórios (RCTR-C / RC-DC / RC-V)','Aferição do tacógrafo (se PBT acima de 4.536 kg)','Curso MOPP','Contrato de agregado'];
+const MANUT_PADRAO = [
+  {item:'Troca de óleo do motor + filtro', tipo:'Manutenção', intervaloKm:10000, intervaloMeses:12},
+  {item:'Filtro de combustível', tipo:'Manutenção', intervaloKm:20000, intervaloMeses:12},
+  {item:'Filtro de ar do motor', tipo:'Manutenção', intervaloKm:20000, intervaloMeses:12},
+  {item:'Filtro do ar-condicionado (cabine)', tipo:'Manutenção', intervaloKm:15000, intervaloMeses:12},
+  {item:'Pastilhas e discos de freio', tipo:'Manutenção', intervaloKm:30000, intervaloMeses:0},
+  {item:'Fluido de freio', tipo:'Manutenção', intervaloKm:0, intervaloMeses:24},
+  {item:'Correia (dentada / acessórios)', tipo:'Manutenção', intervaloKm:60000, intervaloMeses:48},
+  {item:'Revisão geral', tipo:'Manutenção', intervaloKm:20000, intervaloMeses:12},
+  {item:'Alinhamento, balanceamento e rodízio', tipo:'Pneus', intervaloKm:10000, intervaloMeses:6},
+  {item:'Troca de pneus', tipo:'Pneus', intervaloKm:50000, intervaloMeses:0},
+];
+
+/* ===================== Armazenamento ===================== */
+const COLS = ['viagens','abast','gastos','manut','servicos','contas','docs','config'];
+const S = {}; COLS.forEach(c => S[c] = []);
+const LKEY = 'meucaminhao_v1';
+const MKEY = 'meucaminhao_meta';
+function metaGet() { try { return JSON.parse(localStorage.getItem(MKEY) || '{}'); } catch (e) { return {}; } }
+function metaSet(o) { try { localStorage.setItem(MKEY, JSON.stringify(Object.assign(metaGet(), o))); } catch (e) {} }
+let STORAGE_OK = true;
+
+function lsGet() { try { const r = localStorage.getItem(LKEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+function lsSet() { try { const o = {}; COLS.forEach(c => o[c] = S[c]); localStorage.setItem(LKEY, JSON.stringify(o)); return true; } catch (e) { return false; } }
+function loadLocal() { const o = lsGet(); if (o) COLS.forEach(c => S[c] = Array.isArray(o[c]) ? o[c] : []); }
+
+async function save(col, obj) {
+  if (!obj.id) obj.id = uid();
+  obj.atualizado = new Date().toISOString();
+  const arr = S[col]; const i = arr.findIndex(x => x.id === obj.id);
+  if (i >= 0) arr[i] = obj; else arr.push(obj);
+  if (!lsSet()) { toast('Não consegui salvar. A memória do celular pode estar cheia. Faça um backup em Ajustes.'); return false; }
+  return true;
+}
+async function del(col, id) { S[col] = S[col].filter(x => x.id !== id); lsSet(); }
+function setSync() { $('#syncChip').textContent = STORAGE_OK ? '📱 salvo no celular' : '⚠️ sem memória'; }
+async function pedirPersistencia() {
+  try { if (navigator.storage && navigator.storage.persist) { const ja = await navigator.storage.persisted(); if (!ja) await navigator.storage.persist(); } } catch (e) {}
+}
+function testarStorage() { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); } catch (e) { STORAGE_OK = false; } }
+function marcarBackup() { metaSet({ultimoBackup: today()}); }
+
+/* ===================== Cálculos ===================== */
+const cfg = () => S.config.find(c => c.id === 'principal') || {};
+const kmViagem = v => { const a = num(v.odoIni), b = num(v.odoFim); return (a && b && b > a) ? b - a : num(v.km); };
+function odometroAtual() {
+  let m = num(cfg().odometro);
+  S.abast.forEach(a => m = Math.max(m, num(a.odometro)));
+  S.viagens.forEach(v => m = Math.max(m, num(v.odoFim)));
+  S.servicos.forEach(s => m = Math.max(m, num(s.km)));
+  return m;
+}
+function despesas() {
+  const out = [];
+  S.gastos.forEach(g => out.push({id:g.id, col:'gastos', data:g.data, cat:g.categoria || 'Outros', valor:num(g.valor), desc:g.descricao || '', viagemId:g.viagemId}));
+  S.abast.forEach(a => out.push({id:a.id, col:'abast', data:a.data, cat:'Combustível', valor:num(a.valor), desc:(a.posto ? a.posto + ' · ' : '') + N(num(a.litros),1) + ' L', viagemId:a.viagemId}));
+  S.servicos.forEach(s => out.push({id:s.id, col:'servicos', data:s.data, cat:s.tipo || 'Manutenção', valor:num(s.valor), desc:s.descricao || '', viagemId:s.viagemId}));
+  return out;
+}
+const inR = (s, r) => s && s >= r[0] && s <= r[1];
+function range(p, ref) {
+  const d = new Date(ref);
+  if (p === 'hoje') { const s = iso(d); return [s, s]; }
+  if (p === 'semana') { const w = (d.getDay() + 6) % 7; const a = new Date(d); a.setDate(d.getDate() - w); const b = new Date(a); b.setDate(a.getDate() + 6); return [iso(a), iso(b)]; }
+  if (p === 'mes') return [iso(new Date(d.getFullYear(), d.getMonth(), 1)), iso(new Date(d.getFullYear(), d.getMonth()+1, 0))];
+  if (p === 'ano') return [d.getFullYear() + '-01-01', d.getFullYear() + '-12-31'];
+  return ['0000-01-01', '9999-12-31'];
+}
+function rangeLabel(p, ref) {
+  const d = new Date(ref);
+  if (p === 'hoje') return (iso(d) === today() ? 'Hoje, ' : DIAS3[d.getDay()] + ', ') + fmtD(iso(d));
+  if (p === 'semana') { const r = range(p, ref); return fmtDs(r[0]) + ' a ' + fmtDs(r[1]); }
+  if (p === 'mes') return MESES[d.getMonth()].replace(/^./, c => c.toUpperCase()) + ' de ' + d.getFullYear();
+  if (p === 'ano') return 'Ano de ' + d.getFullYear();
+  return 'Todo o período';
+}
+function shiftRef(p, ref, dir) {
+  const d = new Date(ref);
+  if (p === 'hoje') d.setDate(d.getDate() + dir);
+  else if (p === 'semana') d.setDate(d.getDate() + 7*dir);
+  else if (p === 'mes') { d.setDate(1); d.setMonth(d.getMonth() + dir); }
+  else if (p === 'ano') d.setFullYear(d.getFullYear() + dir);
+  return d;
+}
+function consumo(abList) {
+  // Média km/L: km entre abastecimentos de tanque cheio / litros do abastecimento atual
+  const all = S.abast.filter(a => num(a.odometro) > 0).slice().sort((a, b) => num(a.odometro) - num(b.odometro));
+  const per = {};
+  for (let i = 1; i < all.length; i++) {
+    const km = num(all[i].odometro) - num(all[i-1].odometro);
+    const L = num(all[i].litros);
+    if (km > 0 && L > 0 && all[i].cheio !== false) per[all[i].id] = {km, L, kml: km / L};
+  }
+  let km = 0, L = 0;
+  (abList || []).forEach(a => { if (per[a.id]) { km += per[a.id].km; L += per[a.id].L; } });
+  return {per, media: L > 0 ? km / L : 0};
+}
+function statusManut(m) {
+  const odo = odometroAtual();
+  let pk = 0, pd = 0, faltaKm = null, faltaDias = null;
+  if (num(m.intervaloKm) > 0 && num(m.ultimoKm) > 0 && odo > 0) { const uso = odo - num(m.ultimoKm); pk = uso / num(m.intervaloKm); faltaKm = num(m.intervaloKm) - uso; }
+  if (num(m.intervaloMeses) > 0 && m.ultimaData) { const dias = daysBetween(m.ultimaData, today()); const tot = num(m.intervaloMeses) * 30.44; pd = dias / tot; faltaDias = Math.round(tot - dias); }
+  const p = Math.max(pk, pd);
+  const semBase = !(num(m.ultimoKm) > 0 || m.ultimaData);
+  const st = semBase ? 'neu' : p >= 1 ? 'bad' : p >= .85 ? 'warn' : 'good';
+  return {p, st, faltaKm, faltaDias, semBase};
+}
+function contaInfo(c, mesRef) {
+  const pags = S.gastos.filter(g => g.contaId === c.id);
+  const pagasApp = pags.length;
+  const pagas = num(c.parcelasPagas) + pagasApp;
+  const total = num(c.totalParcelas);
+  const restantes = total > 0 ? Math.max(0, total - pagas) : null;
+  const pagoMes = pags.some(g => g.ref === mesRef);
+  const [y, m] = mesRef.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const venc = mesRef + '-' + pad(Math.min(num(c.dia) || 1, lastDay));
+  const quitada = total > 0 && restantes === 0;
+  return {pagas, total, restantes, pagoMes, venc, quitada, saldo: restantes != null ? restantes * num(c.valor) : null};
+}
+function alertas() {
+  const out = []; const hoje = today();
+  S.manut.forEach(m => { const s = statusManut(m); if (s.st === 'bad') out.push({t:'bad', ic:'🔧', m:`<b>${esc(m.item)}</b> está vencida. ${s.faltaKm != null && s.faltaKm < 0 ? 'Passou ' + N(-s.faltaKm) + ' km.' : ''}`}); else if (s.st === 'warn') out.push({t:'warn', ic:'🔧', m:`<b>${esc(m.item)}</b> vence em breve${s.faltaKm != null ? ' (faltam ' + N(Math.max(0,s.faltaKm)) + ' km)' : ''}${s.faltaDias != null ? ' · ' + Math.max(0,s.faltaDias) + ' dias' : ''}.`}); });
+  const mref = hoje.slice(0, 7);
+  S.contas.filter(c => c.ativo !== false).forEach(c => { const i = contaInfo(c, mref); if (i.quitada || i.pagoMes) return; const d = daysBetween(hoje, i.venc); if (d < 0) out.push({t:'bad', ic:'🏦', m:`<b>${esc(c.nome)}</b> venceu dia ${fmtDs(i.venc)} (${R$(num(c.valor))}).`}); else if (d <= 5) out.push({t:'warn', ic:'🏦', m:`<b>${esc(c.nome)}</b> vence ${d === 0 ? 'hoje' : 'em ' + d + ' dia' + (d>1?'s':'')} (${R$(num(c.valor))}).`}); });
+  S.docs.forEach(d => { if (!d.vencimento) return; const x = daysBetween(hoje, d.vencimento); if (x < 0) out.push({t:'bad', ic:'🪪', m:`<b>${esc(d.nome)}</b> está vencido desde ${fmtD(d.vencimento)}.`}); else if (x <= 30) out.push({t:'warn', ic:'🪪', m:`<b>${esc(d.nome)}</b> vence em ${x} dia${x!==1?'s':''} (${fmtD(d.vencimento)}).`}); });
+  const totReg = COLS.reduce((a, c) => a + S[c].length, 0); const ub = metaGet().ultimoBackup;
+  if (totReg >= 5 && (!ub || daysBetween(ub, hoje) > 7)) out.push({t:'info', ic:'💾', m:`${ub ? 'Seu último backup foi em ' + fmtD(ub) + '.' : 'Você ainda não fez nenhum backup.'} Os dados ficam só neste celular: <a href="#ajustes" data-go="ajustes">faça um backup agora</a>.`});
+  S.viagens.forEach(v => { if (v.statusPag === 'Pago') return; const base = v.dataChegada || v.dataSaida; if (!base) return; const lim = v.prevPag || addBusinessDays(base, 30); if (hoje > lim) out.push({t:'bad', ic:'💰', m:`Frete <b>${esc(v.origem)} → ${esc(v.destino)}</b> (${fmtDs(v.dataSaida)}) sem pagamento. Prazo era ${fmtD(lim)}.`}); });
+  return out;
+}
+
+/* ===================== Estado da UI ===================== */
+const UI = {view:'painel', p:'mes', ref:new Date(), vMes: today().slice(0,7), gTab:'gastos', gMes: today().slice(0,7), mTab:'planos', busca:''};
+const VIEWS = ['painel','viagens','gastos','manutencao','antt','ajustes'];
+function go(v) { if (!VIEWS.includes(v)) v = 'painel'; UI.view = v; if (location.hash !== '#' + v) { try { history.replaceState(null, '', '#' + v); } catch (e) { location.hash = v; } } render(); window.scrollTo(0, 0); }
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (VIEWS.includes(h) && h !== UI.view) { UI.view = h; render(); } });
+
+/* ===================== Render principal ===================== */
+function render() {
+  document.querySelectorAll('#bnav button').forEach(b => b.classList.toggle('on', b.dataset.v === UI.view));
+  const c = cfg();
+  $('#hdrTitle').textContent = c.nome ? 'Olá, ' + c.nome.split(' ')[0] : 'Minha Van';
+  $('#hdrSub').textContent = [c.placa, c.modelo].filter(Boolean).join(' · ') || 'Gestão do transportador autônomo';
+  const app = $('#app');
+  const fn = {painel:vPainel, viagens:vViagens, gastos:vGastos, manutencao:vManut, antt:vAntt, ajustes:vAjustes}[UI.view];
+  app.innerHTML = migrBanner() + fn();
+  bindView();
+}
+function migrBanner() { return ''; }
+
+/* ---------- Painel ---------- */
+function vPainel() {
+  const r = range(UI.p, UI.ref);
+  const vs = S.viagens.filter(v => inR(v.dataSaida, r));
+  const ds = despesas().filter(d => inR(d.data, r));
+  const rec = vs.reduce((a, v) => a + num(v.valorFrete), 0);
+  const gas = ds.reduce((a, d) => a + d.valor, 0);
+  const luc = rec - gas;
+  const km = vs.reduce((a, v) => a + kmViagem(v), 0);
+  const abP = S.abast.filter(a => inR(a.data, r));
+  const cons = consumo(abP).media;
+  const litros = abP.reduce((a, x) => a + num(x.litros), 0);
+  const precoMed = litros ? abP.reduce((a, x) => a + num(x.valor), 0) / litros : 0;
+  const diesel = ds.filter(d => d.cat === 'Combustível').reduce((a, d) => a + d.valor, 0);
+  const aReceber = S.viagens.filter(v => v.statusPag !== 'Pago').reduce((a, v) => a + Math.max(0, num(v.valorFrete) - num(v.adiantamento)), 0);
+  const meta = num(cfg().metaLucro);
+  const al = alertas();
+  const empty = !S.viagens.length && !despesas().length;
+
+  let h = `<div class="chips" role="tablist">${[['hoje','Dia'],['semana','Semana'],['mes','Mês'],['ano','Ano'],['tudo','Tudo']].map(([k,l]) => `<button class="chip ${UI.p===k?'on':''}" data-p="${k}">${l}</button>`).join('')}</div>`;
+  h += `<div class="period">${UI.p!=='tudo'?`<button class="navbtn" data-nav="-1" aria-label="Anterior">‹</button>`:''}<div class="lbl">${rangeLabel(UI.p, UI.ref)}</div>${UI.p!=='tudo'?`<button class="navbtn" data-nav="1" aria-label="Próximo">›</button>`:''}</div>`;
+
+  if (empty) {
+    h += `<div class="card"><div class="empty"><div class="big">🚐</div><b>Bem-vindo!</b><p>Comece cadastrando a van em <a href="#ajustes" data-go="ajustes">Ajustes</a> e depois lance a primeira viagem no botão <b>+</b>.</p><button class="btn pri" data-new="viagens">Lançar primeira viagem</button></div></div>`;
+  }
+
+  h += `<div class="grid g4" style="margin-bottom:12px">
+    <div class="kpi hero"><div class="k">Lucro líquido</div><div class="v ${luc>=0?'pos':'neg'}">${R$(luc)}</div><div class="d">${rec ? 'Margem de ' + N(luc/rec*100,1) + '% sobre o faturamento' : 'Sem fretes no período'}${meta && UI.p==='mes' ? ' · meta ' + R$c(meta) + ' (' + N(Math.max(0,luc)/meta*100,0) + '%)' : ''}</div></div>
+    <div class="kpi"><div class="k">Faturamento</div><div class="v">${R$c(rec)}</div><div class="d">${vs.length} viage${vs.length===1?'m':'ns'}</div></div>
+    <div class="kpi"><div class="k">Gastos</div><div class="v">${R$c(gas)}</div><div class="d">Combustível: ${rec ? N(diesel/rec*100,0) + '% do frete' : R$c(diesel)}</div></div>
+    <div class="kpi"><div class="k">KM rodado</div><div class="v">${N(km)}</div><div class="d">${km ? 'Frete ' + R$(rec/km) + '/km' : 'Informe o km nas viagens'}</div></div>
+    <div class="kpi"><div class="k">Custo por km</div><div class="v">${km ? R$(gas/km) : '—'}</div><div class="d">${km ? 'Lucro ' + R$(luc/km) + '/km' : '—'}</div></div>
+    <div class="kpi"><div class="k">Consumo médio</div><div class="v">${cons ? N(cons,2) + ' km/L' : '—'}</div><div class="d">${precoMed ? 'Litro médio ' + R$(precoMed) + '/L' : 'Lance abastecimentos com odômetro'}</div></div>
+    <div class="kpi"><div class="k">A receber</div><div class="v">${R$c(aReceber)}</div><div class="d">Fretes ainda não pagos</div></div>
+    <div class="kpi"><div class="k">Odômetro</div><div class="v">${odometroAtual() ? N(odometroAtual()) : '—'}</div><div class="d">km atual da van</div></div>
+  </div>`;
+
+  h += `<div class="card"><h3>⚠️ Atenção</h3>${al.length ? al.slice(0, 8).map(a => `<div class="alert ${a.t}"><span class="ic">${a.ic}</span><span>${a.m}</span></div>`).join('') + (al.length > 8 ? `<div class="small muted">+ ${al.length-8} avisos</div>` : '') : '<div class="alert good"><span class="ic">✅</span><span>Tudo em dia: nenhuma manutenção, conta ou documento vencendo.</span></div>'}</div>`;
+
+  h += `<div class="grid cols2">`;
+  h += `<div class="card"><h3>Faturamento x Gastos</h3>${chartRecGas(r)}</div>`;
+  h += `<div class="card"><h3>Para onde vai o dinheiro</h3>${catBars(ds, gas)}</div>`;
+  h += `</div>`;
+
+  h += `<div class="card"><h3>🛣️ Rotas mais frequentes</h3>${rotasTable(vs)}</div>`;
+  h += `<div class="grid cols2"><div class="card"><h3>🏢 Melhores contratantes</h3>${clientesTable(vs)}</div><div class="card"><h3>🧾 Últimas viagens do período</h3>${vs.length ? vs.slice().sort((a,b) => (b.dataSaida||'').localeCompare(a.dataSaida||'')).slice(0,5).map(itemViagem).join('') : '<div class="empty">Nenhuma viagem no período.</div>'}</div></div>`;
+  return h;
+}
+
+function buckets(r) {
+  const out = [];
+  if (UI.p === 'hoje' || UI.p === 'semana') {
+    const s = UI.p === 'hoje' ? range('semana', UI.ref) : r;
+    for (let d = parseD(s[0]); iso(d) <= s[1]; d.setDate(d.getDate()+1)) { const k = iso(d); out.push({lbl: DIAS3[d.getDay()], full: fmtD(k), test: x => x === k}); }
+  } else if (UI.p === 'mes') {
+    for (let d = parseD(r[0]); iso(d) <= r[1]; d.setDate(d.getDate()+1)) { const k = iso(d); out.push({lbl: String(d.getDate()), full: fmtD(k), test: x => x === k}); }
+  } else {
+    let y0, m0, y1, m1;
+    if (UI.p === 'ano') { y0 = y1 = new Date(UI.ref).getFullYear(); m0 = 0; m1 = 11; }
+    else {
+      const ds = [...S.viagens.map(v => v.dataSaida), ...despesas().map(d => d.data)].filter(Boolean).sort();
+      const now = new Date(); y1 = now.getFullYear(); m1 = now.getMonth();
+      if (ds.length) { const f = parseD(ds[0]); y0 = f.getFullYear(); m0 = f.getMonth(); } else { y0 = y1; m0 = m1; }
+      const tot = (y1 - y0) * 12 + (m1 - m0); if (tot > 23) { const d = new Date(y1, m1 - 23, 1); y0 = d.getFullYear(); m0 = d.getMonth(); }
+    }
+    for (let d = new Date(y0, m0, 1); d <= new Date(y1, m1, 1); d.setMonth(d.getMonth()+1)) { const k = d.getFullYear() + '-' + pad(d.getMonth()+1); out.push({lbl: MES3[d.getMonth()] + (UI.p==='tudo' ? '/' + String(d.getFullYear()).slice(2) : ''), full: MESES[d.getMonth()] + ' ' + d.getFullYear(), test: x => x && x.slice(0,7) === k}); }
+  }
+  return out;
+}
+function chartRecGas(r) {
+  const bs = buckets(r); const des = despesas();
+  bs.forEach(b => { b.rec = S.viagens.filter(v => b.test(v.dataSaida)).reduce((a, v) => a + num(v.valorFrete), 0); b.gas = des.filter(d => b.test(d.data)).reduce((a, d) => a + d.valor, 0); });
+  const max = Math.max(1, ...bs.map(b => Math.max(b.rec, b.gas)));
+  if (bs.every(b => !b.rec && !b.gas)) return '<div class="empty">Sem lançamentos para mostrar no gráfico.</div>';
+  const W = 600, H = 220, L = 46, B = 26, T = 8, Rr = 6;
+  const pw = W - L - Rr, ph = H - B - T, n = bs.length, slot = pw / n;
+  const bw = Math.max(2, Math.min(22, (slot - 4) / 2 - 1));
+  const nice = niceMax(max); const y = v => T + ph - (v / nice) * ph;
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const v = nice * i / 4; const yy = y(v); g += `<line x1="${L}" x2="${W-Rr}" y1="${yy}" y2="${yy}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${yy+4}" text-anchor="end" font-size="11" fill="var(--muted)">${shortN(v)}</text>`; }
+  const every = n > 16 ? Math.ceil(n / 10) : 1;
+  bs.forEach((b, i) => {
+    const cx = L + slot * i + slot / 2;
+    const x1 = cx - bw - 1, x2 = cx + 1;
+    if (b.rec) g += barPath(x1, y(b.rec), bw, T + ph - y(b.rec), 'var(--s1)');
+    if (b.gas) g += barPath(x2, y(b.gas), bw, T + ph - y(b.gas), 'var(--s2)');
+    if (i % every === 0) g += `<text x="${cx}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(b.lbl)}</text>`;
+    g += `<rect x="${L + slot*i}" y="${T}" width="${slot}" height="${ph}" fill="transparent" data-tip="<b>${esc(b.full)}</b><br>Faturamento: ${esc(R$(b.rec))}<br>Gastos: ${esc(R$(b.gas))}<br>Lucro: ${esc(R$(b.rec-b.gas))}"/>`;
+  });
+  g += `<line x1="${L}" x2="${W-Rr}" y1="${T+ph}" y2="${T+ph}" stroke="var(--muted)" stroke-width="1"/>`;
+  return `<div class="legend"><span><i style="background:var(--s1)"></i>Faturamento</span><span><i style="background:var(--s2)"></i>Gastos</span></div><div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de faturamento e gastos">${g}</svg></div><div class="small muted">Toque nas barras para ver os valores.</div>`;
+}
+function barPath(x, yTop, w, h, fill) { if (h <= 0) return ''; const r = Math.min(4, w/2, h); return `<path d="M${x},${yTop+h} V${yTop+r} Q${x},${yTop} ${x+r},${yTop} H${x+w-r} Q${x+w},${yTop} ${x+w},${yTop+r} V${yTop+h} Z" fill="${fill}"/>`; }
+function niceMax(v) { const p = Math.pow(10, Math.floor(Math.log10(v))); const f = v / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p; }
+function shortN(v) { if (v >= 1e6) return N(v/1e6,1) + 'mi'; if (v >= 1e3) return N(v/1e3, v % 1000 ? 1 : 0) + 'mil'; return N(v); }
+function catBars(ds, tot) {
+  if (!ds.length) return '<div class="empty">Nenhum gasto no período.</div>';
+  const m = {}; ds.forEach(d => m[d.cat] = (m[d.cat] || 0) + d.valor);
+  const arr = Object.entries(m).sort((a, b) => b[1] - a[1]); const mx = arr[0][1] || 1;
+  let rows = arr.slice(0, 8);
+  if (arr.length > 8) rows.push(['Demais', arr.slice(8).reduce((a, x) => a + x[1], 0)]);
+  return rows.map(([c, v]) => `<div class="hbar" data-tip="<b>${esc(c)}</b><br>${esc(R$(v))} · ${N(v/tot*100,1)}% dos gastos"><span class="nm">${CAT_ICO[c]||'•'} ${esc(c)}</span><span class="track"><i style="width:${Math.max(1.5, v/mx*100)}%"></i></span><span class="vl">${R$c(v)} <span class="muted small">${N(v/tot*100,0)}%</span></span></div>`).join('');
+}
+function rotasTable(vs) {
+  if (!vs.length) return '<div class="empty">Lance viagens para ver as rotas.</div>';
+  const m = {};
+  vs.forEach(v => { const k = norm(v.origem) + '>' + norm(v.destino); const o = m[k] || (m[k] = {o: title(v.origem), d: title(v.destino), n: 0, rec: 0, km: 0, kmN: 0}); o.n++; o.rec += num(v.valorFrete); const k2 = kmViagem(v); if (k2) { o.km += k2; o.kmN++; } });
+  const arr = Object.values(m).sort((a, b) => b.n - a.n || b.rec - a.rec).slice(0, 8);
+  return `<div class="tscroll"><table class="t"><thead><tr><th>Rota</th><th class="r">Viagens</th><th class="r">Frete médio</th><th class="r">KM médio</th><th class="r">R$/km</th></tr></thead><tbody>${arr.map(o => `<tr><td><b>${esc(o.o)}</b> → ${esc(o.d)}</td><td class="r">${o.n}</td><td class="r">${R$(o.rec/o.n)}</td><td class="r">${o.kmN ? N(o.km/o.kmN) : '—'}</td><td class="r">${o.km ? R$(o.rec/o.km*(o.kmN/o.n)) : '—'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function clientesTable(vs) {
+  const m = {};
+  vs.forEach(v => { const k = norm(v.contratante) || '(sem nome)'; const o = m[k] || (m[k] = {nm: title(v.contratante) || '(sem nome)', n: 0, rec: 0, pend: 0}); o.n++; o.rec += num(v.valorFrete); if (v.statusPag !== 'Pago') o.pend += num(v.valorFrete) - num(v.adiantamento); });
+  const arr = Object.values(m).sort((a, b) => b.rec - a.rec).slice(0, 6);
+  if (!arr.length) return '<div class="empty">Sem dados no período.</div>';
+  return `<table class="t"><thead><tr><th>Contratante</th><th class="r">Viagens</th><th class="r">Faturado</th><th class="r">Pendente</th></tr></thead><tbody>${arr.map(o => `<tr><td>${esc(o.nm)}</td><td class="r">${o.n}</td><td class="r">${R$c(o.rec)}</td><td class="r ${o.pend>0?'neg':''}">${o.pend>0?R$c(o.pend):'—'}</td></tr>`).join('')}</tbody></table>`;
+}
+
+/* ---------- Viagens ---------- */
+function lucroViagem(v) { const g = despesas().filter(d => d.viagemId === v.id).reduce((a, d) => a + d.valor, 0); return {g, l: num(v.valorFrete) - g}; }
+function itemViagem(v) {
+  const k = kmViagem(v); const lv = lucroViagem(v);
+  const pago = v.statusPag === 'Pago';
+  const abaixo = num(v.piso) > 0 && num(v.valorFrete) < num(v.piso);
+  return `<div class="item" data-edit="viagens" data-id="${v.id}"><div class="ico">🚚</div><div class="grow"><div class="t">${esc(title(v.origem))} → ${esc(title(v.destino))}</div><div class="s">${fmtDs(v.dataSaida)} · ${esc(v.contratante || 'sem contratante')}${k ? ' · ' + N(k) + ' km' : ''}${lv.g ? ' · lucro ' + R$c(lv.l) : ''}</div></div><div><div class="amt">${R$c(num(v.valorFrete))}</div><div style="text-align:right;margin-top:3px">${abaixo ? '<span class="pill bad">abaixo do piso</span>' : pago ? '<span class="pill good">pago</span>' : '<span class="pill warn">a receber</span>'}</div></div></div>`;
+}
+function vViagens() {
+  const [y, m] = UI.vMes.split('-').map(Number);
+  const r = UI.vMes === 'todas' ? ['0000','9999'] : [UI.vMes + '-01', iso(new Date(y, m, 0))];
+  const q = norm(UI.busca);
+  let vs = S.viagens.filter(v => (UI.vMes === 'todas' || inR(v.dataSaida, r)) && (!q || norm([v.origem, v.destino, v.contratante, v.carga, v.ciot].join(' ')).includes(q)));
+  vs.sort((a, b) => (b.dataSaida || '').localeCompare(a.dataSaida || ''));
+  const rec = vs.reduce((a, v) => a + num(v.valorFrete), 0), km = vs.reduce((a, v) => a + kmViagem(v), 0);
+  const pend = vs.filter(v => v.statusPag !== 'Pago').reduce((a, v) => a + num(v.valorFrete) - num(v.adiantamento), 0);
+  let h = `<div class="row between"><h2>Viagens</h2><button class="btn pri sm" data-new="viagens">+ Nova viagem</button></div>`;
+  h += mesPicker('vMes', UI.vMes, true);
+  h += `<input class="inp" placeholder="Buscar cidade, contratante, carga…" data-bind="busca" value="${esc(UI.busca)}" style="margin-bottom:12px">`;
+  h += `<div class="grid g3" style="margin-bottom:12px"><div class="kpi"><div class="k">Fretes</div><div class="v">${R$c(rec)}</div><div class="d">${vs.length} viagens</div></div><div class="kpi"><div class="k">KM</div><div class="v">${N(km)}</div><div class="d">${km ? R$(rec/km) + '/km' : '—'}</div></div><div class="kpi"><div class="k">A receber</div><div class="v">${R$c(pend)}</div><div class="d">deste filtro</div></div></div>`;
+  h += `<div class="card">${vs.length ? vs.map(itemViagem).join('') : '<div class="empty"><div class="big">🛣️</div>Nenhuma viagem neste mês.</div>'}</div>`;
+  return h;
+}
+function mesPicker(key, val, allowAll) {
+  const opts = []; const d = new Date(); d.setDate(1);
+  const set = new Set([...S.viagens.map(v => (v.dataSaida||'').slice(0,7)), ...despesas().map(x => (x.data||'').slice(0,7)), today().slice(0,7)].filter(Boolean));
+  [...set].sort().reverse().forEach(k => { const [yy, mm] = k.split('-').map(Number); opts.push([k, MESES[mm-1].replace(/^./, c => c.toUpperCase()) + ' ' + yy]); });
+  if (allowAll) opts.push(['todas', 'Todos os meses']);
+  return `<select class="inp" data-bind="${key}" style="margin-bottom:10px">${opts.map(([k, l]) => `<option value="${k}" ${k===val?'selected':''}>${l}</option>`).join('')}</select>`;
+}
+
+/* ---------- Gastos ---------- */
+function vGastos() {
+  let h = `<div class="row between"><h2>Gastos</h2></div>`;
+  h += `<div class="tabs2">${[['gastos','💸 Gastos'],['abast','⛽ Combustível'],['contas','🏦 Contas fixas']].map(([k, l]) => `<button class="${UI.gTab===k?'on':''}" data-gtab="${k}">${l}</button>`).join('')}</div>`;
+  if (UI.gTab === 'contas') return h + vContas();
+  h += mesPicker('gMes', UI.gMes, true);
+  const [y, m] = UI.gMes.split('-').map(Number);
+  const r = UI.gMes === 'todas' ? ['0000','9999'] : [UI.gMes + '-01', iso(new Date(y, m, 0))];
+  if (UI.gTab === 'abast') {
+    const ab = S.abast.filter(a => inR(a.data, r)).sort((a, b) => (b.data||'').localeCompare(a.data||'') || num(b.odometro) - num(a.odometro));
+    const L = ab.reduce((a, x) => a + num(x.litros), 0), V = ab.reduce((a, x) => a + num(x.valor), 0);
+    const c = consumo(ab); const meta = num(cfg().metaKml);
+    h += `<div class="grid g3" style="margin-bottom:12px"><div class="kpi"><div class="k">Combustível</div><div class="v">${R$c(V)}</div><div class="d">${N(L,0)} litros</div></div><div class="kpi"><div class="k">Preço médio</div><div class="v">${L ? R$(V/L) : '—'}</div><div class="d">por litro</div></div><div class="kpi"><div class="k">Consumo</div><div class="v ${meta && c.media ? (c.media >= meta ? 'pos':'neg') : ''}">${c.media ? N(c.media,2) : '—'}</div><div class="d">km/L${meta ? ' · meta ' + N(meta,1) : ''}</div></div></div>`;
+    h += `<div class="row between" style="margin-bottom:8px"><span class="small muted">Para calcular o consumo, informe o odômetro e encha o tanque.</span><button class="btn pri sm" data-new="abast">+ Abastecer</button></div>`;
+    h += `<div class="card">${ab.length ? ab.map(a => { const p = c.per[a.id]; return `<div class="item" data-edit="abast" data-id="${a.id}"><div class="ico">⛽</div><div class="grow"><div class="t">${esc(a.posto || 'Abastecimento')}</div><div class="s">${fmtDs(a.data)} · ${N(num(a.litros),1)} L · ${num(a.litros) ? R$(num(a.valor)/num(a.litros)) + '/L' : ''}${num(a.odometro) ? ' · ' + N(num(a.odometro)) + ' km' : ''}</div></div><div><div class="amt">${R$(num(a.valor))}</div><div style="text-align:right;margin-top:3px">${p ? `<span class="pill ${meta ? (p.kml >= meta ? 'good' : 'warn') : 'neu'}">${N(p.kml,2)} km/L</span>` : ''}</div></div></div>`; }).join('') : '<div class="empty"><div class="big">⛽</div>Nenhum abastecimento neste mês.</div>'}</div>`;
+    return h;
+  }
+  const ds = despesas().filter(d => inR(d.data, r)).sort((a, b) => (b.data||'').localeCompare(a.data||''));
+  const tot = ds.reduce((a, d) => a + d.valor, 0);
+  h += `<div class="grid g2" style="margin-bottom:12px"><div class="kpi"><div class="k">Total de gastos</div><div class="v">${R$c(tot)}</div><div class="d">${ds.length} lançamentos (inclui diesel e manutenção)</div></div><div class="kpi"><div class="k">Maior gasto</div><div class="v" style="font-size:17px">${ds.length ? esc(topCat(ds)) : '—'}</div><div class="d">categoria</div></div></div>`;
+  h += `<div class="card"><h3>Por categoria</h3>${catBars(ds, tot)}</div>`;
+  h += `<div class="row between" style="margin-bottom:8px"><h3 style="margin:0">Lançamentos</h3><button class="btn pri sm" data-new="gastos">+ Novo gasto</button></div>`;
+  h += `<div class="card">${ds.length ? ds.map(d => `<div class="item" data-edit="${d.col}" data-id="${d.id}"><div class="ico">${CAT_ICO[d.cat] || '•'}</div><div class="grow"><div class="t">${esc(d.cat)}</div><div class="s">${fmtDs(d.data)}${d.desc ? ' · ' + esc(d.desc) : ''}${d.viagemId ? ' · 🚚 vinculado' : ''}</div></div><div class="amt">${R$(d.valor)}</div></div>`).join('') : '<div class="empty"><div class="big">💸</div>Nenhum gasto neste mês.</div>'}</div>`;
+  return h;
+}
+function topCat(ds) { const m = {}; ds.forEach(d => m[d.cat] = (m[d.cat]||0) + d.valor); const t = Object.entries(m).sort((a,b) => b[1]-a[1])[0]; return t ? (CAT_ICO[t[0]]||'') + ' ' + t[0] : '—'; }
+function vContas() {
+  const mref = UI.gMes === 'todas' ? today().slice(0,7) : UI.gMes;
+  const [y, m] = mref.split('-').map(Number);
+  const cs = S.contas.slice().sort((a, b) => num(a.dia) - num(b.dia));
+  const ativas = cs.filter(c => c.ativo !== false && !contaInfo(c, mref).quitada);
+  const totMes = ativas.reduce((a, c) => a + num(c.valor), 0);
+  const pagoMes = ativas.filter(c => contaInfo(c, mref).pagoMes).reduce((a, c) => a + num(c.valor), 0);
+  const saldoPrest = cs.reduce((a, c) => { const i = contaInfo(c, mref); return a + (i.saldo || 0); }, 0);
+  let h = mesPicker('gMes', mref, false);
+  h += `<div class="grid g3" style="margin-bottom:12px"><div class="kpi"><div class="k">Contas do mês</div><div class="v">${R$c(totMes)}</div><div class="d">${MESES[m-1]} ${y}</div></div><div class="kpi"><div class="k">Já pago</div><div class="v pos">${R$c(pagoMes)}</div><div class="d">falta ${R$c(totMes - pagoMes)}</div></div><div class="kpi"><div class="k">Saldo de parcelas</div><div class="v">${R$c(saldoPrest)}</div><div class="d">financiamentos restantes</div></div></div>`;
+  h += `<div class="row between" style="margin-bottom:8px"><span class="small muted">Prestação, seguro, rastreador, INSS… O app lembra todo mês.</span><button class="btn pri sm" data-new="contas">+ Conta fixa</button></div>`;
+  h += `<div class="card">${cs.length ? cs.map(c => { const i = contaInfo(c, mref); const inativa = c.ativo === false; const d = daysBetween(today(), i.venc); const st = i.quitada ? '<span class="pill good">quitada</span>' : inativa ? '<span class="pill neu">pausada</span>' : i.pagoMes ? '<span class="pill good">paga</span>' : d < 0 ? '<span class="pill bad">vencida</span>' : d <= 5 ? '<span class="pill warn">vence ' + fmtDs(i.venc) + '</span>' : '<span class="pill neu">dia ' + fmtDs(i.venc) + '</span>'; return `<div class="item" data-edit="contas" data-id="${c.id}"><div class="ico">${CAT_ICO[c.categoria] || '🏦'}</div><div class="grow"><div class="t">${esc(c.nome)}</div><div class="s">${esc(c.categoria || '')}${i.total ? ' · parcela ' + Math.min(i.pagas + (i.pagoMes?0:1), i.total) + ' de ' + i.total + ' · faltam ' + i.restantes : ''}</div></div><div style="text-align:right"><div class="amt">${R$(num(c.valor))}</div><div style="margin-top:4px">${st}</div>${!i.pagoMes && !i.quitada && !inativa ? `<button class="btn sm dark" style="margin-top:6px" data-pagar="${c.id}" data-ref="${mref}">Marcar pago</button>` : ''}</div></div>`; }).join('') : '<div class="empty"><div class="big">🏦</div>Cadastre a prestação da van e outras contas mensais.</div>'}</div>`;
+  return h;
+}
+
+/* ---------- Manutenção ---------- */
+function vManut() {
+  const odo = odometroAtual();
+  let h = `<div class="row between"><h2>Manutenção</h2></div>`;
+  h += `<div class="card row between wrap"><div><div class="small muted">Odômetro atual</div><div style="font-size:24px;font-weight:800">${odo ? N(odo) + ' km' : 'não informado'}</div></div><button class="btn sm" data-act="odo">Atualizar km</button></div>`;
+  h += `<div class="tabs2">${[['planos','🗓️ Programadas'],['hist','📜 Histórico']].map(([k, l]) => `<button class="${UI.mTab===k?'on':''}" data-mtab="${k}">${l}</button>`).join('')}</div>`;
+  if (UI.mTab === 'hist') {
+    const ss = S.servicos.slice().sort((a, b) => (b.data||'').localeCompare(a.data||''));
+    const ano = today().slice(0,4); const totAno = ss.filter(s => (s.data||'').startsWith(ano)).reduce((a, s) => a + num(s.valor), 0);
+    h += `<div class="grid g2" style="margin-bottom:12px"><div class="kpi"><div class="k">Gasto em ${ano}</div><div class="v">${R$c(totAno)}</div><div class="d">manutenção e pneus</div></div><div class="kpi"><div class="k">Serviços</div><div class="v">${ss.length}</div><div class="d">registrados</div></div></div>`;
+    h += `<div class="row between" style="margin-bottom:8px"><span></span><button class="btn pri sm" data-new="servicos">+ Registrar serviço</button></div>`;
+    h += `<div class="card">${ss.length ? ss.map(s => `<div class="item" data-edit="servicos" data-id="${s.id}"><div class="ico">${s.tipo === 'Pneus' ? '🛞' : '🔧'}</div><div class="grow"><div class="t">${esc(s.descricao || 'Serviço')}</div><div class="s">${fmtDs(s.data)}${num(s.km) ? ' · ' + N(num(s.km)) + ' km' : ''}${s.oficina ? ' · ' + esc(s.oficina) : ''}</div></div><div class="amt">${R$(num(s.valor))}</div></div>`).join('') : '<div class="empty">Nenhum serviço registrado.</div>'}</div>`;
+    return h;
+  }
+  const ms = S.manut.map(m => ({m, s: statusManut(m)})).sort((a, b) => b.s.p - a.s.p);
+  h += `<div class="row between wrap" style="margin-bottom:8px;gap:8px">${!S.manut.length ? '<button class="btn dark sm" data-act="padrao">Usar lista padrão</button>' : '<span class="small muted">Intervalos sugeridos: ajuste pelo manual da sua van.</span>'}<button class="btn pri sm" data-new="manut">+ Item</button></div>`;
+  h += `<div class="card">${ms.length ? ms.map(({m, s}) => { const col = {good:'var(--good)', warn:'var(--warn)', bad:'var(--bad)', neu:'var(--muted)'}[s.st]; const txt = s.semBase ? 'Informe quando foi feita a última vez' : [s.faltaKm != null ? (s.faltaKm >= 0 ? 'faltam ' + N(s.faltaKm) + ' km' : 'passou ' + N(-s.faltaKm) + ' km') : null, s.faltaDias != null ? (s.faltaDias >= 0 ? s.faltaDias + ' dias' : 'atrasada ' + (-s.faltaDias) + ' dias') : null].filter(Boolean).join(' · '); return `<div style="padding:12px 0;border-bottom:1px solid var(--line)"><div class="row between" data-edit="manut" data-id="${m.id}" style="cursor:pointer"><div class="grow"><div style="font-weight:700">${m.tipo === 'Pneus' ? '🛞' : '🔧'} ${esc(m.item)}</div><div class="small muted">a cada ${[num(m.intervaloKm) ? N(num(m.intervaloKm)) + ' km' : null, num(m.intervaloMeses) ? num(m.intervaloMeses) + ' meses' : null].filter(Boolean).join(' ou ') || '—'}${m.ultimaData ? ' · última ' + fmtD(m.ultimaData) : ''}</div></div><span class="pill ${s.st}">${s.st==='bad'?'vencida':s.st==='warn'?'em breve':s.st==='good'?'em dia':'sem dados'}</span></div><div class="bar" style="margin:8px 0 6px"><i style="width:${Math.min(100, s.p*100)}%;background:${col}"></i></div><div class="row between"><span class="small ink2">${txt}</span><button class="btn sm" data-feito="${m.id}">✔ Feito</button></div></div>`; }).join('') : '<div class="empty"><div class="big">🔧</div>Monte o plano de manutenção da van. Use a lista padrão e ajuste.</div>'}</div>`;
+  return h;
+}
+
+/* ---------- ANTT / Regras ---------- */
+function vAntt() {
+  const ds = S.docs.slice().sort((a, b) => (a.vencimento || '9').localeCompare(b.vencimento || '9'));
+  let h = `<h2>Regras e documentos</h2>`;
+  h += `<div class="card"><div class="row between"><h3 style="margin:0">🪪 Meus documentos</h3><button class="btn pri sm" data-new="docs">+ Documento</button></div><div class="small muted" style="margin:4px 0 6px">O app avisa 30 dias antes de vencer.</div>${ds.length ? ds.map(d => { const x = d.vencimento ? daysBetween(today(), d.vencimento) : null; const st = x == null ? '<span class="pill neu">sem data</span>' : x < 0 ? '<span class="pill bad">vencido</span>' : x <= 30 ? '<span class="pill warn">' + x + ' dias</span>' : '<span class="pill good">em dia</span>'; return `<div class="item" data-edit="docs" data-id="${d.id}"><div class="ico">📄</div><div class="grow"><div class="t">${esc(d.nome)}</div><div class="s">${d.vencimento ? 'vence ' + fmtD(d.vencimento) : 'sem vencimento'}${d.numero ? ' · nº ' + esc(d.numero) : ''}</div></div>${st}</div>`; }).join('') : `<div class="empty">Cadastre RNTRC, CNH, licenciamento, seguro…<br><button class="btn dark sm" style="margin-top:10px" data-act="docsPadrao">Adicionar lista básica</button></div>`}</div>`;
+
+  h += `<div class="card"><h3>🧮 Meu frete está acima do piso?</h3><div class="small muted" style="margin-bottom:10px">Pegue o valor do piso na calculadora oficial da ANTT (link abaixo) e compare com o que te ofereceram.</div>
+  <div class="frow"><div class="field"><label>Frete oferecido (R$)</label><input class="inp" id="pzF" type="number" inputmode="decimal" step="0.01"></div><div class="field"><label>Piso ANTT (R$)</label><input class="inp" id="pzP" type="number" inputmode="decimal" step="0.01"></div></div>
+  <div class="frow"><div class="field"><label>Distância (km)</label><input class="inp" id="pzK" type="number" inputmode="numeric"></div><div class="field"><label>Pedágio pago por fora?</label><select class="inp" id="pzV"><option value="1">Sim, vale-pedágio</option><option value="0">Não</option></select></div></div>
+  <div class="calc" id="pzOut">Preencha os campos para comparar.</div>
+  <a href="https://calculadorafrete.antt.gov.br/" target="_blank" rel="noopener">Abrir calculadora oficial do piso (ANTT) ↗</a></div>`;
+
+  h += `<div class="card"><h3>📌 Resumo das regras para o TAC agregado</h3><div class="small muted">Conferido em 17/11/2026. As regras mudam com frequência: sempre confirme no site da ANTT.</div>
+
+  <div class="rule"><h4>1. Piso mínimo de frete é obrigatório</h4>
+  <p>Desde a Lei 15.485/2026 (que converteu a MP 1.343/2026), o pagamento ao TAC agregado e ao TAC independente tem que respeitar o piso mínimo de frete da Lei 13.703/2018. Quem contrata abaixo do piso pode ter que indenizar o transportador em até 2 vezes o valor do piso.</p>
+  <p>A ANTT revisa a tabela duas vezes por ano (janeiro e julho) e também quando o diesel varia acima do gatilho. O último reajuste conhecido usou diesel S10 de <b>R$ 7,33/L</b> como referência, com valores em vigor desde 30/09/2026.</p>
+  <p class="src">Fontes: Lei 15.485/2026; SETCESP; Mundo Logística.</p></div>
+
+  <div class="rule"><h4>2. CIOT agora bloqueia frete abaixo do piso</h4>
+  <p>O CIOT deixou de ser só um registro: se o valor informado for menor que o piso, o sistema não gera o código e a viagem fica sem regularidade. Sem CIOT, não há transporte regular.</p>
+  <p>Para <b>TAC agregado</b>, cada CIOT cobre um vínculo de no mínimo 10 e no máximo 30 dias, com exclusividade nesse período (regra em vigor desde 24/05/2026). Quem registra o CIOT é o contratante.</p>
+  <p class="src">Fontes: Portaria SUROC 6/2026; Resoluções ANTT 6.077 e 6.078/2026.</p></div>
+
+  <div class="rule"><h4>3. Prazo de pagamento: até 30 dias úteis</h4>
+  <p>O frete tem que ser pago em até 30 dias úteis. Vale para contratos assinados desde 06/08/2026 e, desde 05/11/2026, também para contratos que já existiam.</p>
+  <p>Se o contratante atrasar: paga o valor corrigido, multa de R$ 10.500, indenização ao transportador e pode sofrer restrição para operar. O app avisa no Painel quando um frete passa desse prazo.</p>
+  <p class="src">Fonte: Comunicado Geral SUROC nº 1/2026 (ANTT).</p></div>
+
+  <div class="rule"><h4>4. RNTRC em dia</h4>
+  <ul><li>Sem RNTRC ativo não pode fazer transporte remunerado.</li>
+  <li>Quem recolhe o INSS por conta própria precisa comprovar que está em dia, senão a inscrição ou a revalidação do RNTRC pode ser suspensa.</li>
+  <li>A ANTT também exige comprovar os seguros obrigatórios do transporte de cargas; quem não comprovar pode ter o RNTRC suspenso.</li></ul>
+  <p class="src">Fontes: Lei 15.485/2026, art. 5º; Portaria ANTT 27/2025.</p></div>
+
+  <div class="rule"><h4>5. Vale-pedágio</h4>
+  <p>O pedágio da viagem deve ser pago pelo embarcador, à parte do frete (Lei 10.209/2001). Se o vale-pedágio veio, não lance o pedágio como gasto seu.</p></div>
+
+  <div class="rule"><h4>6. Tempo de direção, descanso e o que vale para van</h4>
+  <ul><li>No máximo <b>5h30 dirigindo sem parar</b>, com 30 minutos de descanso.</li>
+  <li><b>11 horas de descanso</b> a cada 24 horas (pode dividir, com um período de pelo menos 8h seguidas).</li>
+  <li>Descumprir é infração média, com multa e retenção do veículo até cumprir o descanso.</li>
+  <li>Exame toxicológico periódico obrigatório para CNH C, D e E. Van de até 3.500 kg de peso total pode ser dirigida com CNH B, e aí o exame não é exigido.</li><li>Tacógrafo só é obrigatório em veículo de carga com peso bruto total acima de 4.536 kg. Confira no documento da van.</li></ul>
+  <p class="src">Fontes: Lei 13.103/2015; CTB.</p></div>
+  </div>`;
+
+  h += `<div class="card"><h3>🔗 Links úteis</h3>
+  <div class="item" style="cursor:default"><div class="ico">🏛️</div><div class="grow"><a href="https://www.gov.br/antt/pt-br" target="_blank" rel="noopener">Portal da ANTT</a><div class="s">Notícias, resoluções e consulta de RNTRC</div></div></div>
+  <div class="item" style="cursor:default"><div class="ico">🧮</div><div class="grow"><a href="https://calculadorafrete.antt.gov.br/" target="_blank" rel="noopener">Calculadora do piso mínimo</a><div class="s">Informe carga, eixos e distância</div></div></div>
+  <div class="item" style="cursor:default"><div class="ico">📜</div><div class="grow"><a href="https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/L13703.htm" target="_blank" rel="noopener">Lei 13.703/2018 (piso de frete)</a><div class="s">Texto atualizado com a Lei 15.485/2026</div></div></div>
+  <div class="item" style="cursor:default"><div class="ico">📰</div><div class="grow"><a href="https://mundologistica.com.br/noticias/antt-esclarece-prazo-de-30-dias-uteis-para-pagamento-do-frete" target="_blank" rel="noopener">Prazo de 30 dias úteis</a><div class="s">Mundo Logística</div></div></div>
+  <div class="item" style="cursor:default"><div class="ico">📰</div><div class="grow"><a href="https://setcesp.org.br/revista-setcesp/noticias/antt-reajusta-tabela-do-frete-minimo-com-diesel-a-r-733-novos-valores-valem-a-partir-de-quarta-feira" target="_blank" rel="noopener">Reajuste com diesel a R$ 7,33</a><div class="s">SETCESP</div></div></div>
+  <div class="item" style="cursor:default"><div class="ico">📰</div><div class="grow"><a href="https://mundologistica.com.br/noticias/portaria-antt-bloqueia-ciot-fretes-abaixo-piso-minimo" target="_blank" rel="noopener">CIOT bloqueia frete abaixo do piso</a><div class="s">Mundo Logística</div></div></div>
+  </div>`;
+  return h;
+}
+
+/* ---------- Ajustes ---------- */
+function vAjustes() {
+  const c = cfg();
+  const total = COLS.reduce((a, k) => a + S[k].length, 0);
+  let h = `<h2>Ajustes</h2>`;
+  h += `<div class="card"><h3>🚐 Minha van</h3>
+  <div class="field"><label>Seu nome</label><input class="inp" data-cfg="nome" value="${esc(c.nome)}" placeholder="Ex.: José"></div>
+  <div class="frow"><div class="field"><label>Placa</label><input class="inp" data-cfg="placa" value="${esc(c.placa)}" placeholder="ABC1D23"></div><div class="field"><label>Eixos</label><input class="inp" data-cfg="eixos" type="number" value="${esc(c.eixos)}"></div></div>
+  <div class="field"><label>Modelo / ano</label><input class="inp" data-cfg="modelo" value="${esc(c.modelo)}" placeholder="Ex.: Mercedes Sprinter 416 2019"></div>
+  <div class="frow"><div class="field"><label>Odômetro (km)</label><input class="inp" data-cfg="odometro" type="number" inputmode="numeric" value="${esc(c.odometro)}"></div><div class="field"><label>Meta de consumo (km/L)</label><input class="inp" data-cfg="metaKml" type="number" step="0.1" inputmode="decimal" value="${esc(c.metaKml)}" placeholder="Ex.: 9"></div></div>
+  <div class="field"><label>Meta de lucro por mês (R$)</label><input class="inp" data-cfg="metaLucro" type="number" inputmode="decimal" value="${esc(c.metaLucro)}"></div>
+  <div class="field"><label>Contratante principal (agregado)</label><input class="inp" data-cfg="contratante" value="${esc(c.contratante)}" placeholder="Transportadora para quem você roda"><div class="hint">Já vem preenchido nas viagens novas.</div></div>
+  <button class="btn pri block" data-act="saveCfg">Salvar</button></div>`;
+  h += `<div class="card"><h3>💾 Seus dados</h3>
+  <p class="small ink2">Os dados ficam guardados <b>só neste celular</b>. Não precisa de internet nem de conta. Por isso, faça um backup toda semana e guarde no WhatsApp ou no e-mail: se o celular quebrar ou for trocado, é com ele que você recupera tudo.</p>
+  <p class="small muted">${total} registros no total · último backup: ${metaGet().ultimoBackup ? fmtD(metaGet().ultimoBackup) : 'nunca'}</p>
+  <div class="grid g2"><button class="btn dark" data-act="share">📤 Enviar backup (WhatsApp, e-mail)</button><button class="btn" data-act="export">⬇️ Baixar arquivo de backup</button></div>
+  <label class="btn block" style="display:block;text-align:center;margin-top:10px">⬆️ Restaurar um backup<input type="file" accept="application/json,.json" id="impFile" hidden></label>
+  <div id="expBox"></div></div>
+  <div class="card"><h3>📲 Ícone na tela inicial</h3>${INSTALL.ev ? '<p class="small ink2">Instale o app para abrir direto da tela inicial, em tela cheia e sem internet.</p><button class="btn pri block" data-act="instalar">Instalar Minha Van</button>' : INSTALL.standalone ? '<p class="small ink2">✅ O app já está instalado na tela inicial.</p>' : '<p class="small ink2"><b>Android (Chrome):</b> toque nos três pontinhos ⋮ e escolha <b>Adicionar à tela inicial</b> ou <b>Instalar app</b>.<br><b>iPhone (Safari):</b> toque no botão de compartilhar e escolha <b>Adicionar à Tela de Início</b>.</p>'}</div>
+  <div class="card"><h3>💡 Dicas de uso</h3><ul class="small ink2" style="padding-left:18px;margin:0">
+  <li>Lance a viagem quando receber a carga e marque como <b>pago</b> quando o dinheiro cair.</li>
+  <li>No abastecimento, sempre anote o <b>odômetro</b> e encha o tanque. Assim o app calcula o km/L sozinho.</li>
+  <li>Vincule gastos à viagem (pedágio, comida, chapa) para ver o <b>lucro real de cada viagem</b>.</li>
+  <li>Cadastre a prestação e o seguro em <b>Gastos › Contas fixas</b> e só toque em "Marcar pago" todo mês.</li></ul></div>`;
+  return h;
+}
+
+/* ===================== Formulários ===================== */
+const FORMS = {
+  viagens: {t:'Viagem', fields:[
+    ['dataSaida','Data de saída','date',{req:1, def:() => today()}],
+    ['dataChegada','Data de entrega','date'],
+    ['origem','Origem (cidade/UF)','text',{req:1, list:'origens', ph:'Ex.: Jandira/SP'}],
+    ['destino','Destino (cidade/UF)','text',{req:1, list:'destinos', ph:'Ex.: Cuiabá/MT'}],
+    ['contratante','Contratante','text',{list:'contratantes', def:() => cfg().contratante || ''}],
+    ['carga','Tipo de carga','text',{ph:'Ex.: carga geral, grãos…'}],
+    ['valorFrete','Valor do frete (R$)','money',{req:1}],
+    ['adiantamento','Adiantamento recebido (R$)','money'],
+    ['_row1',null,'row',['odoIni','odoFim']],
+    ['odoIni','Odômetro na saída','int'],
+    ['odoFim','Odômetro na chegada','int'],
+    ['km','KM rodado','int',{hint:'Se preencher os odômetros, o km é calculado sozinho.'}],
+    ['piso','Piso ANTT desta viagem (R$)','money',{hint:'Opcional. Se o frete ficar abaixo, o app avisa.'}],
+    ['ciot','Nº do CIOT / CT-e','text'],
+    ['statusPag','Pagamento','select',{opts:['A receber','Pago'], def:() => 'A receber'}],
+    ['prevPag','Previsão de pagamento','date',{hint:'Se deixar vazio, o app usa o prazo legal de 30 dias úteis após a entrega.'}],
+    ['obs','Observações','textarea'],
+  ]},
+  abast: {t:'Abastecimento', fields:[
+    ['data','Data','date',{req:1, def:() => today()}],
+    ['odometro','Odômetro (km)','int',{hint:'Importante para calcular o consumo.'}],
+    ['_row1',null,'row',['litros','valor']],
+    ['litros','Litros','dec',{req:1}],
+    ['valor','Valor total (R$)','money',{req:1}],
+    ['cheio','Encheu o tanque?','check',{def:() => true}],
+    ['posto','Posto / cidade','text',{list:'postos'}],
+    ['viagemId','Viagem','viagem'],
+  ]},
+  gastos: {t:'Gasto', fields:[
+    ['data','Data','date',{req:1, def:() => today()}],
+    ['categoria','Categoria','select',{opts:CAT_GASTO, req:1}],
+    ['valor','Valor (R$)','money',{req:1}],
+    ['descricao','Descrição','text'],
+    ['viagemId','Viagem','viagem'],
+  ]},
+  manut: {t:'Item de manutenção', fields:[
+    ['item','O que é','text',{req:1, ph:'Ex.: Troca de óleo do motor'}],
+    ['tipo','Tipo','select',{opts:['Manutenção','Pneus'], def:() => 'Manutenção'}],
+    ['_row1',null,'row',['intervaloKm','intervaloMeses']],
+    ['intervaloKm','A cada (km)','int'],
+    ['intervaloMeses','Ou a cada (meses)','int'],
+    ['_row2',null,'row',['ultimoKm','ultimaData']],
+    ['ultimoKm','Última vez (km)','int'],
+    ['ultimaData','Última vez (data)','date'],
+    ['obs','Observações','textarea'],
+  ]},
+  servicos: {t:'Serviço realizado', fields:[
+    ['data','Data','date',{req:1, def:() => today()}],
+    ['planoId','Item programado','plano'],
+    ['descricao','O que foi feito','text',{req:1}],
+    ['tipo','Tipo','select',{opts:['Manutenção','Pneus'], def:() => 'Manutenção'}],
+    ['_row1',null,'row',['km','valor']],
+    ['km','KM da van','int',{def:() => odometroAtual() || ''}],
+    ['valor','Valor (R$)','money',{req:1}],
+    ['oficina','Oficina / loja','text',{list:'oficinas'}],
+    ['viagemId','Viagem (se foi na estrada)','viagem'],
+  ]},
+  contas: {t:'Conta fixa', fields:[
+    ['nome','Nome','text',{req:1, ph:'Ex.: Prestação da van'}],
+    ['categoria','Categoria','select',{opts:CAT_CONTA, def:() => 'Prestação da van'}],
+    ['_row1',null,'row',['valor','dia']],
+    ['valor','Valor por mês (R$)','money',{req:1}],
+    ['dia','Dia do vencimento','int',{req:1}],
+    ['_row2',null,'row',['totalParcelas','parcelasPagas']],
+    ['totalParcelas','Total de parcelas','int',{hint:'Vazio se não tiver fim.'}],
+    ['parcelasPagas','Já pagas antes do app','int'],
+    ['ativo','Conta ativa','check',{def:() => true}],
+  ]},
+  docs: {t:'Documento', fields:[
+    ['nome','Documento','text',{req:1, list:'docsSug'}],
+    ['numero','Número','text'],
+    ['vencimento','Vencimento','date'],
+    ['obs','Observações','textarea'],
+  ]},
+};
+
+function datalists() {
+  const uniq = arr => [...new Map(arr.filter(Boolean).map(x => [norm(x), title(x)])).values()].sort();
+  const dl = (id, arr) => `<datalist id="${id}">${uniq(arr).map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  return dl('origens', [...S.viagens.map(v => v.origem), ...S.viagens.map(v => v.destino)]) + dl('destinos', [...S.viagens.map(v => v.destino), ...S.viagens.map(v => v.origem)]) + dl('contratantes', S.viagens.map(v => v.contratante)) + dl('postos', S.abast.map(a => a.posto)) + dl('oficinas', S.servicos.map(s => s.oficina)) + dl('docsSug', DOCS_SUG);
+}
+function fieldHtml(f, o) {
+  const [k, label, type, opt0] = f; const opt = opt0 || {};
+  let v = o[k]; if (v == null && opt.def) v = opt.def(); if (v == null) v = '';
+  const req = opt.req ? ' <span style="color:var(--bad)">*</span>' : '';
+  const hint = opt.hint ? `<div class="hint">${opt.hint}</div>` : '';
+  let input;
+  if (type === 'textarea') input = `<textarea class="inp" name="${k}">${esc(v)}</textarea>`;
+  else if (type === 'select') input = `<select class="inp" name="${k}">${opt.req && !v ? '<option value="">Escolha…</option>' : ''}${opt.opts.map(x => `<option ${x===v?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
+  else if (type === 'check') return `<label class="check"><input type="checkbox" name="${k}" ${v ? 'checked' : ''}> ${label}</label>`;
+  else if (type === 'viagem') { const vs = S.viagens.slice().sort((a, b) => (b.dataSaida||'').localeCompare(a.dataSaida||'')).slice(0, 40); input = `<select class="inp" name="${k}"><option value="">Nenhuma</option>${vs.map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${fmtDs(x.dataSaida)} · ${esc(title(x.origem))} → ${esc(title(x.destino))}</option>`).join('')}</select>`; }
+  else if (type === 'plano') input = `<select class="inp" name="${k}"><option value="">Nenhum (serviço avulso)</option>${S.manut.map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(x.item)}</option>`).join('')}</select>`;
+  else { const t = type === 'date' ? 'date' : (type === 'money' || type === 'dec' || type === 'int') ? 'number' : 'text'; const im = type === 'int' ? 'numeric' : (type === 'money' || type === 'dec') ? 'decimal' : ''; const st = type === 'int' ? '1' : '0.01'; input = `<input class="inp" name="${k}" type="${t}" ${t==='number' ? `step="${st}" inputmode="${im}" min="0"` : ''} ${opt.list ? `list="${opt.list}" autocomplete="off"` : ''} value="${esc(v)}" placeholder="${esc(opt.ph || '')}">`; }
+  return `<div class="field"><label>${label}${req}</label>${input}${hint}</div>`;
+}
+function openForm(col, id, preset) {
+  const F = FORMS[col]; const o = id ? Object.assign({}, S[col].find(x => x.id === id)) : Object.assign({}, preset || {});
+  const map = {}; F.fields.forEach(f => map[f[0]] = f);
+  const skip = new Set(); let body = '';
+  F.fields.forEach(f => { if (skip.has(f[0])) return; if (f[2] === 'row') { f[3].forEach(k => skip.add(k)); body += `<div class="frow">${f[3].map(k => fieldHtml(map[k], o)).join('')}</div>`; } else body += fieldHtml(f, o); });
+  let extra = '';
+  if (col === 'viagens') extra = `<div class="calc" id="calcV"></div>`;
+  if (col === 'abast') extra = `<div class="calc" id="calcA"></div>`;
+  const ov = modal(`<h3>${id ? 'Editar' : 'Nova'} ${F.t.toLowerCase()}</h3><form id="frm" novalidate>${body}${extra}<div class="row" style="margin-top:6px">${id ? '<button type="button" class="btn danger" id="btnDel">Excluir</button>' : ''}<span class="grow"></span><button type="button" class="btn" data-close>Cancelar</button><button class="btn pri" type="submit">Salvar</button></div></form>${datalists()}`);
+  const frm = $('#frm', ov);
+  const read = () => { const out = {}; F.fields.forEach(([k, , type]) => { if (type === 'row') return; const el = frm.elements[k]; if (!el) return; if (type === 'check') out[k] = el.checked; else if (type === 'money' || type === 'dec' || type === 'int') out[k] = el.value === '' ? '' : num(el.value); else out[k] = el.value.trim(); }); return out; };
+  const upd = () => {
+    const x = read();
+    if (col === 'viagens') { const km = (x.odoIni && x.odoFim && x.odoFim > x.odoIni) ? x.odoFim - x.odoIni : num(x.km); const box = $('#calcV', ov); let t = []; if (km && x.valorFrete) t.push(`💰 ${R$(x.valorFrete / km)} por km`); if (x.adiantamento && x.valorFrete) t.push(`Saldo a receber: <b>${R$(x.valorFrete - x.adiantamento)}</b>`); if (x.piso && x.valorFrete) t.push(x.valorFrete < x.piso ? `<span class="neg">⚠️ ${R$(x.piso - x.valorFrete)} abaixo do piso ANTT</span>` : `<span class="pos">✅ acima do piso (+${R$(x.valorFrete - x.piso)})</span>`); if (!x.prevPag && (x.dataChegada || x.dataSaida) && x.statusPag !== 'Pago') t.push(`Prazo legal de pagamento: ${fmtD(addBusinessDays(x.dataChegada || x.dataSaida, 30))}`); if (x.odoIni && x.odoFim && x.odoFim > x.odoIni) frm.elements.km.value = x.odoFim - x.odoIni; box.innerHTML = t.join('<br>') || 'Preencha frete e km para ver o valor por km.'; box.style.display = ''; }
+    if (col === 'abast') { const box = $('#calcA', ov); const t = []; if (x.litros && x.valor) t.push(`Preço: <b>${R$(x.valor / x.litros)}/L</b>`); if (x.odometro && x.litros) { const prev = S.abast.filter(a => a.id !== id && num(a.odometro) > 0 && num(a.odometro) < x.odometro).sort((a, b) => num(b.odometro) - num(a.odometro))[0]; if (prev) { const kml = (x.odometro - num(prev.odometro)) / x.litros; t.push(`Consumo desde o último: <b>${N(kml,2)} km/L</b> (${N(x.odometro - num(prev.odometro))} km)`); } } box.innerHTML = t.join('<br>') || 'Informe litros, valor e odômetro.'; }
+  };
+  frm.addEventListener('input', upd); upd();
+  if (col === 'servicos') frm.elements.planoId.addEventListener('change', e => { const p = S.manut.find(m => m.id === e.target.value); if (p) { if (!frm.elements.descricao.value) frm.elements.descricao.value = p.item; frm.elements.tipo.value = p.tipo || 'Manutenção'; } });
+  frm.addEventListener('submit', async e => {
+    e.preventDefault(); const x = read();
+    const miss = F.fields.filter(([k, l, t, opt]) => opt && opt.req && t !== 'row' && (x[k] === '' || x[k] == null)).map(f => f[1]);
+    if (miss.length) { toast('Preencha: ' + miss.join(', ')); return; }
+    if (col === 'viagens') { x.origem = title(x.origem); x.destino = title(x.destino); x.contratante = title(x.contratante); if (x.statusPag === 'Pago' && !o.dataPago) x.dataPago = today(); }
+    const obj = Object.assign(o, x); if (id) obj.id = id;
+    const ok = await save(col, obj);
+    if (ok && col === 'servicos' && obj.planoId) { const p = S.manut.find(m => m.id === obj.planoId); if (p && (!p.ultimaData || obj.data >= p.ultimaData)) { p.ultimaData = obj.data; if (num(obj.km)) p.ultimoKm = num(obj.km); await save('manut', Object.assign({}, p)); } }
+    close(ov); toast('Salvo ✔'); render();
+  });
+  const bd = $('#btnDel', ov);
+  if (bd) bd.onclick = () => confirmBox('Excluir este registro?', 'Essa ação não pode ser desfeita.', async () => { await del(col, id); close(ov); toast('Excluído'); render(); });
+}
+function modal(html) { const ov = document.createElement('div'); ov.className = 'ov'; ov.innerHTML = `<div class="sheet">${html}</div>`; ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) close(ov); }); document.body.appendChild(ov); document.body.style.overflow = 'hidden'; return ov; }
+function close(ov) { ov.remove(); if (!document.querySelector('.ov')) document.body.style.overflow = ''; }
+function confirmBox(t, s, yes) { const ov = modal(`<h3>${esc(t)}</h3><p class="ink2">${esc(s)}</p><div class="row"><span class="grow"></span><button class="btn" data-close>Cancelar</button><button class="btn danger" id="yes">Confirmar</button></div>`); $('#yes', ov).onclick = async () => { close(ov); await yes(); }; }
+
+function quickAdd() {
+  const ov = modal(`<h3>O que você quer lançar?</h3><div class="quick">
+  <button data-q="viagens"><span class="e">🚚</span>Viagem / frete</button>
+  <button data-q="abast"><span class="e">⛽</span>Abastecimento</button>
+  <button data-q="gastos"><span class="e">💸</span>Gasto</button>
+  <button data-q="servicos"><span class="e">🔧</span>Manutenção feita</button>
+  <button data-q="contas"><span class="e">🏦</span>Conta fixa</button>
+  <button data-q="docs"><span class="e">🪪</span>Documento</button></div>
+  <button class="btn block" style="margin-top:12px" data-close>Fechar</button>`);
+  ov.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { close(ov); openForm(b.dataset.q); });
+}
+
+/* ===================== Eventos ===================== */
+function bindView() {
+  const app = $('#app');
+  app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { UI.p = b.dataset.p; UI.ref = new Date(); render(); });
+  app.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { UI.ref = shiftRef(UI.p, UI.ref, +b.dataset.nav); render(); });
+  app.querySelectorAll('[data-new]').forEach(b => b.onclick = () => openForm(b.dataset.new));
+  app.querySelectorAll('[data-edit]').forEach(b => b.onclick = e => { if (e.target.closest('button,a')) return; openForm(b.dataset.edit, b.dataset.id); });
+  app.querySelectorAll('[data-go]').forEach(b => b.onclick = e => { e.preventDefault(); go(b.dataset.go); });
+  app.querySelectorAll('[data-gtab]').forEach(b => b.onclick = () => { UI.gTab = b.dataset.gtab; render(); });
+  app.querySelectorAll('[data-mtab]').forEach(b => b.onclick = () => { UI.mTab = b.dataset.mtab; render(); });
+  app.querySelectorAll('[data-bind]').forEach(el => {
+    const k = el.dataset.bind;
+    if (k === 'busca') el.oninput = () => { UI.busca = el.value; const pos = el.selectionStart; render(); const n = $('[data-bind="busca"]'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} };
+    else el.onchange = () => { UI[k] = el.value; render(); };
+  });
+  app.querySelectorAll('[data-pagar]').forEach(b => b.onclick = async () => {
+    const c = S.contas.find(x => x.id === b.dataset.pagar); const ref = b.dataset.ref; const i = contaInfo(c, ref);
+    const ov = modal(`<h3>Pagar ${esc(c.nome)}</h3><form id="pf"><div class="frow"><div class="field"><label>Data do pagamento</label><input class="inp" name="data" type="date" value="${today()}"></div><div class="field"><label>Valor pago (R$)</label><input class="inp" name="valor" type="number" step="0.01" inputmode="decimal" value="${num(c.valor)}"></div></div><div class="small muted" style="margin-bottom:12px">Referente a ${MESES[+ref.slice(5)-1]} de ${ref.slice(0,4)}${i.total ? ' · parcela ' + (i.pagas + 1) + ' de ' + i.total : ''}. Vai entrar nos gastos.</div><div class="row"><span class="grow"></span><button type="button" class="btn" data-close>Cancelar</button><button class="btn pri">Confirmar</button></div></form>`);
+    $('#pf', ov).onsubmit = async e => { e.preventDefault(); const f = e.target.elements; await save('gastos', {data: f.data.value || today(), categoria: CAT_GASTO.includes(c.categoria) ? c.categoria : 'Outros', valor: num(f.valor.value), descricao: c.nome + (i.total ? ` (${i.pagas+1}/${i.total})` : ''), contaId: c.id, ref}); close(ov); toast('Pagamento registrado ✔'); render(); };
+  });
+  app.querySelectorAll('[data-feito]').forEach(b => b.onclick = () => { const p = S.manut.find(m => m.id === b.dataset.feito); openForm('servicos', null, {planoId: p.id, descricao: p.item, tipo: p.tipo || 'Manutenção'}); });
+  app.querySelectorAll('[data-act]').forEach(b => b.onclick = () => ACT[b.dataset.act] && ACT[b.dataset.act](b));
+  const imp = $('#impFile'); if (imp) imp.onchange = e => importFile(e.target.files[0]);
+  const pz = ['pzF','pzP','pzK','pzV'].map(i => $('#' + i));
+  if (pz[0]) { const f = () => { const F = num(pz[0].value), P = num(pz[1].value), K = num(pz[2].value); const out = $('#pzOut'); if (!F || !P) { out.innerHTML = 'Preencha frete e piso para comparar.'; return; } const d = F - P; let s = d >= 0 ? `<span class="pos"><b>✅ Frete OK:</b> ${R$(d)} acima do piso (${N(d/P*100,1)}%).</span>` : `<span class="neg"><b>⚠️ Abaixo do piso:</b> faltam ${R$(-d)}. Pela lei, esse frete não pode ser contratado nem registrar CIOT.</span>`; if (K) s += `<br>Frete: ${R$(F/K)}/km · Piso: ${R$(P/K)}/km`; const custo = custoKmHist(); if (K && custo) s += `<br>Seu custo médio: ${R$(custo)}/km → sobra estimada de <b>${R$(F - custo*K)}</b>`; if (pz[3].value === '0') s += `<br><span class="muted">Lembre: o pedágio deveria vir em vale-pedágio, separado do frete.</span>`; out.innerHTML = s; }; pz.forEach(el => el.oninput = el.onchange = f); }
+}
+function custoKmHist() { const r = range('tudo'); const km = S.viagens.reduce((a, v) => a + kmViagem(v), 0); const g = despesas().reduce((a, d) => a + d.valor, 0); return km > 500 ? g / km : 0; }
+
+const ACT = {
+  async saveCfg() { const o = Object.assign({}, cfg(), {id:'principal'}); document.querySelectorAll('[data-cfg]').forEach(el => { const k = el.dataset.cfg; o[k] = el.type === 'number' ? (el.value === '' ? '' : num(el.value)) : el.value.trim(); }); if (o.placa) o.placa = o.placa.toUpperCase(); if (await save('config', o)) toast('Ajustes salvos ✔'); render(); },
+  odo() { const ov = modal(`<h3>Atualizar odômetro</h3><form id="of"><div class="field"><label>KM atual da van</label><input class="inp" name="km" type="number" inputmode="numeric" value="${odometroAtual() || ''}"></div><div class="row"><span class="grow"></span><button type="button" class="btn" data-close>Cancelar</button><button class="btn pri">Salvar</button></div></form>`); $('#of', ov).onsubmit = async e => { e.preventDefault(); const km = num(e.target.elements.km.value); const o = Object.assign({}, cfg(), {id:'principal', odometro: km}); await save('config', o); close(ov); if (km < odometroAtual()) toast('Atenção: há registros com km maior que esse.'); render(); }; },
+  async padrao() { const odo = odometroAtual(); for (const m of MANUT_PADRAO) await save('manut', Object.assign({}, m, {ultimoKm: odo || '', ultimaData: ''})); toast('Lista padrão criada. Ajuste a data da última troca de cada item.'); render(); },
+  async docsPadrao() { for (const n of ['RNTRC (ANTT)','CNH','Exame toxicológico','CRLV / Licenciamento','Seguro da van']) await save('docs', {nome: n, vencimento: ''}); toast('Lista criada. Toque em cada um para colocar a data.'); render(); },
+  async share() {
+    const {json, fn} = backupJson();
+    try {
+      const file = new File([json], fn, {type: 'application/json'});
+      if (navigator.canShare && navigator.canShare({files: [file]})) { await navigator.share({files: [file], title: 'Backup Minha Van', text: 'Backup do app Minha Van de ' + fmtD(today())}); marcarBackup(); toast('Backup enviado ✔'); render(); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    toast('Este celular não deixa compartilhar arquivo. Vou baixar o backup.'); ACT.export();
+  },
+  async export() {
+    const {json, fn} = backupJson();
+    try {
+      const blob = new Blob([json], {type: 'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      marcarBackup(); toast('Backup salvo na pasta Downloads ✔'); setTimeout(render, 300); return;
+    } catch (e) {}
+    const box = $('#expBox'); box.innerHTML = `<div class="field" style="margin-top:10px"><label>Copie este texto e guarde no WhatsApp ou no e-mail:</label><textarea class="inp" readonly style="min-height:120px;font-size:12px">${esc(json)}</textarea></div><button class="btn sm dark" id="cpy">Copiar</button>`;
+    $('#cpy').onclick = async () => { try { await navigator.clipboard.writeText(json); marcarBackup(); toast('Copiado ✔'); } catch (e) { box.querySelector('textarea').select(); } };
+  },
+  async instalar() { if (!INSTALL.ev) return; INSTALL.ev.prompt(); try { await INSTALL.ev.userChoice; } catch (e) {} INSTALL.ev = null; render(); },
+};
+function backupJson() { const o = {app:'minha-van', versao:2, exportadoEm:new Date().toISOString(), dados:{}}; COLS.forEach(c => o.dados[c] = S[c]); return {json: JSON.stringify(o), fn: 'backup-minha-van-' + today() + '.json'}; }
+async function importFile(file) {
+  if (!file) return;
+  let o; try { o = JSON.parse(await file.text()); } catch (e) { toast('Arquivo inválido'); return; }
+  const d = o && o.dados; if (!d) { toast('Esse arquivo não é um backup do app'); return; }
+  const n = COLS.reduce((a, c) => a + (Array.isArray(d[c]) ? d[c].length : 0), 0);
+  confirmBox('Restaurar backup?', `${n} registros serão adicionados ou atualizados. Os registros atuais com o mesmo código serão substituídos.`, async () => {
+    for (const c of COLS) for (const r of (d[c] || [])) if (r && r.id) await save(c, Object.assign({}, r));
+    toast('Backup restaurado ✔'); render();
+  });
+}
+
+/* Tooltip */
+const tip = $('#tip');
+function showTip(el, x, y) { const t = el.getAttribute('data-tip'); if (!t) return; tip.innerHTML = t; tip.style.left = Math.max(80, Math.min(window.innerWidth - 80, x)) + 'px'; tip.style.top = (y + window.scrollY) + 'px'; tip.style.position = 'absolute'; tip.style.opacity = 1; }
+document.addEventListener('pointermove', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el && e.pointerType === 'mouse') showTip(el, e.clientX, e.clientY - 8); else if (e.pointerType === 'mouse') tip.style.opacity = 0; });
+document.addEventListener('click', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el) { const r = el.getBoundingClientRect(); showTip(el, e.clientX || r.left + r.width/2, (e.clientY || r.top) - 8); clearTimeout(showTip.t); showTip.t = setTimeout(() => tip.style.opacity = 0, 3000); } else tip.style.opacity = 0; });
+
+$('#fab').onclick = quickAdd;
+$('#btnCfg').onclick = () => go('ajustes');
+document.querySelectorAll('#bnav button').forEach(b => b.onclick = () => go(b.dataset.v));
+
+/* Início */
+const INSTALL = {ev: null, standalone: (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true};
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); INSTALL.ev = e; if (UI.view === 'ajustes') render(); });
+window.addEventListener('appinstalled', () => { INSTALL.ev = null; INSTALL.standalone = true; toast('App instalado ✔'); });
+testarStorage(); loadLocal();
+{ const h = location.hash.slice(1); if (VIEWS.includes(h)) UI.view = h; }
+setSync(); render(); pedirPersistencia();
+if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => { const w = reg.installing; if (!w) return; w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) toast('Nova versão do app disponível. Feche e abra de novo para atualizar.'); }); });
+  }).catch(() => {}); });
+}
+</script>
+</body>
+</html>
